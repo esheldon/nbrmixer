@@ -67,7 +67,7 @@ class ScriptWriter(dict):
         text=_script_template % self
 
         script_fname=files.get_script_file(self['run'], index)
-        print("writing:",script_fname)
+        #print("writing:",script_fname)
         with open(script_fname, 'w') as fobj:
             fobj.write(text)
 
