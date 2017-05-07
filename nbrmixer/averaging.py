@@ -4,6 +4,8 @@ try:
 except:
     xrange=range
 
+import os
+import shutil
 import nsim
 import nbrsim
 
