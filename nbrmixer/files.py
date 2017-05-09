@@ -126,12 +126,18 @@ def get_wq_dir(run):
     bdir = os.environ['TMPDIR']
     return os.path.join(bdir, 'nbrmixer', run, 'scripts')
 
-def get_wq_file(run, index):
+def get_lsf_dir(run):
+    """
+    We don't want wq stuff on gpfs
+    """
+    return get_wq_dir(run)
+
+def get_lsf_file(run, index):
     """
     get the yaml file path
     """
-    dir=get_wq_dir(run)
-    basename = get_generic_basename(run, index=index, ext='yaml')
+    dir=get_lsf_dir(run)
+    basename = get_generic_basename(run, index=index, ext='lsf')
     return os.path.join(dir, basename)
 
 

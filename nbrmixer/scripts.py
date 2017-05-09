@@ -42,8 +42,12 @@ class ScriptWriter(dict):
         write the basic bash scripts and queue submission scripts
         """
         for i in xrange(self['njobs']):
-            if self['system']=='wq':
+            if self['system'] == 'wq':
                 self._write_wq(i)
+
+            elif self['system'] == 'lsf':
+                self._write_lsf(i)
+
             else:
                 raise RuntimeError("bad system: '%s'" % self['system'])
 
@@ -105,6 +109,39 @@ class ScriptWriter(dict):
         with open(wq_fname,'w') as fobj:
             fobj.write(text)
 
+    def _write_lsf(self, index):
+        """
+        write the lsf submission script
+        """
+
+        lsf_dir = files.get_lsf_dir(self['run'])
+        if not os.path.exists(lsf_dir):
+            os.makedirs(lsf_dir)
+
+        lsf_fname=files.get_lsf_file(self['run'], index)
+
+        if self.missing:
+            lsf_fname = lsf_fname.replace('.lsf','-missing.lsf')
+
+            output_file = files.get_output_file(self['run'], index)
+            if os.path.exists(output_file):
+                if os.path.exists(lsf_fname):
+                    os.remove(lsf_fname)
+                return
+
+        job_name = os.path.basename(lsf_fname)
+        job_name = job_name.replace('.lsf','')
+
+        self['job_name'] = job_name
+        self['logfile']  = files.get_log_file(self['run'], index)
+        self['script']   = files.get_script_file(self['run'], index)
+
+        text = _lsf_template  % self
+
+        print("writing:",lsf_fname)
+        with open(lsf_fname,'w') as fobj:
+            fobj.write(text)
+
 
     def _makedirs(self):
         """
@@ -160,6 +197,34 @@ python -u $(which ngmixit)    \
     $config_file              \
     $output_file              \
     $meds_file
+"""
+
+_lsf_template = """#!/bin/bash
+#BSUB -J %(job_name)s
+#BSUB -n 1
+#BSUB -oo ./%(job_name)s.oe
+#BSUB -W 12:00
+#BSUB -R "linux64 && rhel60 && scratch > 2"
+
+echo "working on host: $(hostname)"
+uptime
+
+export tmpdir="/scratch/esheldon/${LSB_JOBID}"
+export TMPDIR="$tmpdir"
+
+mkdir -p ${tmpdir}
+echo "cd $tmpdir"
+cd $tmpdir
+
+logfile="%(logfile)s"
+tmp_logfile="$(basename $logfile)"
+tmp_logfile="$tmpdir/$tmp_logfile"
+
+/usr/bin/time bash %(script)s &> "$tmp_logfile"
+
+mv -vf "$tmp_logfile" "$logfile"
+
+rm -r $tmpdir
 """
 
 _wq_template = """#!/bin/bash
