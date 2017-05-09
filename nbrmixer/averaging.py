@@ -29,10 +29,10 @@ class NbrmixerSummer(nsim.averaging_new.Summer):
 
         conf['simc']['do_ring'] = False
         
-        shear_conf = conf['simc']['bright_gal']['shear']
-        g1 = shear_conf['g1']
-        g2 = shear_conf['g2']
-        conf['simc']['shear'] = [g1,g2]
+        #shear_conf = conf['simc']['bright_gal']['shear']
+        #g1 = shear_conf['g1']
+        #g2 = shear_conf['g2']
+        #conf['simc']['shear'] = [g1,g2]
 
         self.update(conf)
 
