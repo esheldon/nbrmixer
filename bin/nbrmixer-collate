@@ -16,6 +16,9 @@ from argparse import ArgumentParser
 parser=ArgumentParser()
 
 parser.add_argument('run', help='processing run')
+parser.add_argument('--match',
+                    action='store_true',
+                    help='match to truth and pull out shear info')
 
 
 def main():
@@ -32,6 +35,8 @@ def main():
 
     first=True
     print("will write to:",collated_file)
+    radius = conf['collate']['match_radius_pixels']
+
     with fitsio.FITS(collated_file,'rw',clobber=True) as fits:
         for i in xrange(njobs):
 
@@ -44,6 +49,14 @@ def main():
                 continue
 
             data = fitsio.read(output_file)
+
+            if args.match:
+                data, nmatch = nbrmixer.util.match_truth(
+                    data, 
+                    conf['nbrsim_run'],
+                    i,
+                    radius,
+                )
 
             if first:
                 first=False
