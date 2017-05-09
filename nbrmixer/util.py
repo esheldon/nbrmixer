@@ -1,4 +1,57 @@
+from __future__ import print_function
 import numpy
+import esutil as eu
+import fitsio
+
+def match_truth(data, run, index, radius):
+    """
+    get the sextractor catalog, which should align with this one.
+
+    match x,y to the truth catalog
+
+    copy in shear and shear_index
+    """
+    import nbrsim
+
+    sx_file = nbrsim.files.get_sxcat_file(run, index)
+    truth_file = nbrsim.files.get_truth_file(run, index)
+
+    print("matching")
+    print("    reading:",sx_file)
+    sx    = fitsio.read(sx_file, ext=2, lower=True)
+    print("    reading:",truth_file)
+    truth = fitsio.read(truth_file)
+
+    assert numpy.all(sx['number']==data['number'])
+
+    allow=1
+    msx, mtruth = close_match(
+        sx['xwin_image']-1,
+        sx['ywin_image']-1,
+        truth['x'],
+        truth['y'],
+        radius,
+        allow,
+    )
+
+    nmatch=msx.size
+    ntot=sx.size
+    frac=float(nmatch)/ntot
+    print("        matched %d/%d %.2f" % (nmatch, ntot, frac))
+
+    add_dt=[
+        ('shear_true','f8',2),
+        ('shear_index','i2'),
+    ]
+    newdata = eu.numpy_util.add_fields(data, add_dt)
+    newdata['shear_index'] = -9999
+
+    if nmatch > 0:
+        newdata['shear_true'][msx,0] = truth['shear1'][mtruth]
+        newdata['shear_true'][msx,1] = truth['shear2'][mtruth]
+        newdata['shear_index'][msx] = truth['shear_index'][mtruth]
+
+    return newdata, nmatch
 
 def close_match(t1,s1,t2,s2,ep,allow,verbose=False):
     """
@@ -85,18 +138,18 @@ def close_match(t1,s1,t2,s2,ep,allow,verbose=False):
                         ngood=allow
                     good=good[0:ngood]
                     matcharr[i,0:ngood]=good
-                    run=runi+ngood
+                    runi=runi+ngood
         
 
     if verbose:
-        print "total put in bytarr:",runi
+        print("total put in bytarr:",runi)
 
     #matches=numpy.where(matcharr != -1)[0]
     matches=numpy.where(matcharr != -1)
     #if (matches.size == 0):
     if (matches[0].size == 0):
         if verbose:
-            print "no matches found"
+            print("no matches found")
         m1=numpy.array([])
         m2=numpy.array([])
         return m1,m2
@@ -106,7 +159,7 @@ def close_match(t1,s1,t2,s2,ep,allow,verbose=False):
     m2 = ind[m2].flatten()
 
     if verbose:
-        print m1.size,' matches'
+        print(m1.size,' matches')
 
     return m1,m2
 
