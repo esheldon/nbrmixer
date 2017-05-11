@@ -35,7 +35,6 @@ def main():
 
     first=True
     print("will write to:",collated_file)
-    radius = conf['collate']['match_radius_pixels']
 
     with fitsio.FITS(collated_file,'rw',clobber=True) as fits:
         for i in xrange(njobs):
@@ -51,11 +50,20 @@ def main():
             data = fitsio.read(output_file)
 
             if args.match:
+                # match to truth
+                radius = conf['collate']['match_radius_pixels']
                 data, nmatch = nbrmixer.util.match_truth(
                     data, 
                     conf['nbrsim_run'],
                     i,
                     radius,
+                )
+            else:
+                # the truth file was already matched
+                data = nbrmixer.util.add_true_shear(
+                    data,
+                    conf['nbrsim_run'],
+                    i,
                 )
 
             if first:

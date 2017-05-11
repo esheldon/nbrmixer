@@ -3,6 +3,29 @@ import numpy
 import esutil as eu
 import fitsio
 
+def add_true_shear(data, run, index):
+    """
+    get the matched catalog and add the shear
+    """
+    import nbrsim
+    matched_file = nbrsim.files.get_sxcat_match_file(run, index)
+
+    matched_data = fitsio.read(matched_file)
+
+    assert numpy.all(data['number'] == matched_data['number'])
+
+    add_dt=[
+        ('shear_true','f8',2),
+        ('shear_index','i2'),
+    ]
+    newdata = eu.numpy_util.add_fields(data, add_dt)
+
+    newdata['shear_index'] = matched_data['shear_index']
+    newdata['shear_true']  = matched_data['shear_true']
+
+    return newdata
+
+
 def match_truth(data, run, index, radius):
     """
     get the sextractor catalog, which should align with this one.

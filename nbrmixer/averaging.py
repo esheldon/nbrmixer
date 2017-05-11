@@ -6,6 +6,7 @@ except:
 
 import os
 import shutil
+import numpy
 import nsim
 import nbrsim
 
@@ -35,8 +36,20 @@ class NbrmixerSummer(nsim.averaging_new.Summer):
         #conf['simc']['shear'] = [g1,g2]
 
         self.update(conf)
+        self._set_step()
 
-        self.step = self['metacal_pars'].get('step',0.01)
+    def _preselect(self, data):
+        """
+        sub-classes might make a pre-selection, e.g. of some flags
+        """
+        
+        data = super(NbrmixerSummer,self)._preselect(data)
+        w,=numpy.where(data['shear_index'] >= -1) 
+        data=data[w]
+        data['shear_index'] = 0
+        return data
+
+
 
     def get_run_output(self, run):
         """

@@ -22,7 +22,8 @@ jobs:
     bands: ['r','i','z']
 
 collate:
-    match_radius_pixels: 2.0
+    #match_radius_pixels: 2.0
+    match_radius_pixels: 8.0
 
 
 # for now do regular fitting
