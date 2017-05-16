@@ -2,4 +2,8 @@ runs: [
     "run-002-max001",
     #"run-003-max001",  # this one used the same seed as 002
     "run-003a-max001",
+    "run-003b-max001",
+    "run-003c-max001",
+    "run-003d-max001",
+    "run-003e-max001",
 ]

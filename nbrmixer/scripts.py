@@ -54,6 +54,33 @@ class ScriptWriter(dict):
             self._write_script(i)
 
     def _write_script(self, index):
+        if self.conf['model_nbrs']:
+            self._write_nbrs_script(index)
+        self._write_main_script(index)
+
+    def _write_nbrs_script(self, index):
+        """
+        write the nbrs bash script
+        """
+
+        self['meds_file'] = nbrsim.files.get_meds_file(
+            self.conf['nbrsim_run'],
+            index,
+        )
+
+        self['fof_file'] = files.get_fof_file(self['run'], index)
+        self['nbrs_file'] = files.get_nbrs_file(self['run'], index)
+        
+        
+        text=_nbrs_script_template % self
+
+        script_fname=files.get_nbrs_script_file(self['run'], index)
+        #print("writing:",script_fname)
+        with open(script_fname, 'w') as fobj:
+            fobj.write(text)
+
+
+    def _write_main_script(self, index):
         """
         write the basic bash script
         """
@@ -67,8 +94,12 @@ class ScriptWriter(dict):
 
         self['output_file'] = files.get_output_file(self['run'], index)
         
-        
-        text=_script_template % self
+        if self.conf['model_nbrs']:
+            self['fof_file'] = files.get_fof_file(self['run'], index)
+            self['nbrs_file'] = files.get_nbrs_file(self['run'], index)
+            text=_mof_script_template % self
+        else:
+            text=_script_template % self
 
         script_fname=files.get_script_file(self['run'], index)
         #print("writing:",script_fname)
@@ -110,6 +141,46 @@ class ScriptWriter(dict):
             fobj.write(text)
 
     def _write_lsf(self, index):
+        if self.conf['model_nbrs']:
+            self._write_nbrs_lsf(index)
+
+        self._write_main_lsf(index)
+
+    def _write_nbrs_lsf(self, index):
+        """
+        write the nbrs lsf submission script
+        """
+
+        lsf_dir = files.get_lsf_dir(self['run'])
+        if not os.path.exists(lsf_dir):
+            os.makedirs(lsf_dir)
+
+        lsf_fname=files.get_nbrs_lsf_file(self['run'], index)
+
+        if self.missing:
+            lsf_fname = lsf_fname.replace('.lsf','-missing.lsf')
+
+            nbrs_file = files.get_nbrs_file(self['run'], index)
+            fof_file = files.get_fof_file(self['run'], index)
+            if os.path.exists(nbrs_file) and os.path.exists(fof_file):
+                if os.path.exists(lsf_fname):
+                    os.remove(lsf_fname)
+                return
+
+        job_name = os.path.basename(lsf_fname)
+        job_name = job_name.replace('.lsf','')
+
+        self['job_name'] = job_name
+        self['logfile']  = files.get_nbrs_log_file(self['run'], index)
+        self['script']   = files.get_nbrs_script_file(self['run'], index)
+
+        text = _lsf_template  % self
+
+        print("writing:",lsf_fname)
+        with open(lsf_fname,'w') as fobj:
+            fobj.write(text)
+
+    def _write_main_lsf(self, index):
         """
         write the lsf submission script
         """
@@ -174,6 +245,7 @@ class ScriptWriter(dict):
         self['config_file']=files.get_config_file(self['run'])
 
         self.conf = files.read_config(self['run'])
+        self.conf['model_nbrs'] = self.conf.get('model_nbrs',False)
 
         self.nbrsim_conf = nbrsim.files.read_config(self.conf['nbrsim_run'])
 
@@ -198,6 +270,49 @@ python -u $(which ngmixit)    \
     $output_file              \
     $meds_file
 """
+
+_mof_script_template = r"""#!/bin/bash
+# set up environment before running this script
+
+config_file="%(config_file)s"
+meds_file="%(meds_file)s"
+fof_file="%(fof_file)s"
+nbrs_file="%(nbrs_file)s"
+output_file="%(output_file)s"
+
+meds_base=$(basename $meds_file)
+meds_local="$TMPDIR/$meds_base"
+
+/bin/cp -fv "$meds_file" "$meds_local"
+
+python -u $(which ngmixit)    \
+    --work-dir=$TMPDIR        \
+    --fof-file="$fof_file"    \
+    --nbrs-file="$nbrs_file"  \
+    $config_file              \
+    $output_file              \
+    $meds_local
+
+rm -v "$meds_local"
+
+"""
+
+
+_nbrs_script_template = r"""#!/bin/bash
+# set up environment before running this script
+
+config_file="%(config_file)s"
+meds_file="%(meds_file)s"
+fof_file="%(fof_file)s"
+nbrs_file="%(nbrs_file)s"
+
+ngmixer-meds-make-nbrs-data    \
+    --fof-file="$fof_file"     \
+    --nbrs-file="$nbrs_file"   \
+    "$config_file"             \
+    "$meds_file"
+"""
+
 
 _lsf_template = """#!/bin/bash
 #BSUB -J %(job_name)s

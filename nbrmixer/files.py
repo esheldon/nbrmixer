@@ -116,6 +116,46 @@ def get_collated_file(run):
     basename = get_generic_basename(run, ext='fits')
     return os.path.join(dir, basename)
 
+def get_fof_file(run, index):
+    """
+    get the fof output file path
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='fof', ext='fits')
+    return os.path.join(dir, basename)
+
+def get_nbrs_file(run, index):
+    """
+    get the nbrs output file path
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='fits')
+    return os.path.join(dir, basename)
+
+def get_nbrs_script_file(run, index):
+    """
+    get the script file path
+    """
+
+    dir=get_script_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='sh')
+    return os.path.join(dir, basename)
+
+
+def get_nbrs_log_file(run, index):
+    """
+    location of the log file
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='log')
+
+    return os.path.join(dir, basename)
+
+
+
 #
 # submission scripts
 
@@ -138,6 +178,14 @@ def get_lsf_file(run, index):
     """
     dir=get_lsf_dir(run)
     basename = get_generic_basename(run, index=index, ext='lsf')
+    return os.path.join(dir, basename)
+
+def get_nbrs_lsf_file(run, index):
+    """
+    get the yaml file path
+    """
+    dir=get_lsf_dir(run)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='lsf')
     return os.path.join(dir, basename)
 
 
