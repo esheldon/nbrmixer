@@ -98,6 +98,12 @@ class ScriptWriter(dict):
             self['fof_file'] = files.get_fof_file(self['run'], index)
             self['nbrs_file'] = files.get_nbrs_file(self['run'], index)
             text=_mof_script_template % self
+        elif 'correct_meds' in self.conf:
+            self['mof_file'] = files.get_output_file(
+                self.conf['correct_meds']['mof_run'],
+                index,
+            )
+            text=_mofsub_script_template % self
         else:
             text=_script_template % self
 
@@ -270,6 +276,32 @@ python -u $(which ngmixit)    \
     $output_file              \
     $meds_file
 """
+
+_mofsub_script_template = r"""#!/bin/bash
+# set up environment before running this script
+
+config_file="%(config_file)s"
+meds_file="%(meds_file)s"
+mof_file="%(mof_file)s"
+output_file="%(output_file)s"
+
+meds_base=$(basename $meds_file)
+meds_local="$TMPDIR/$meds_base"
+
+/bin/cp -fv "$meds_file" "$meds_local"
+
+python -u $(which ngmixit)    \
+    --work-dir=$TMPDIR        \
+    --mof-file="$mof_file"    \
+    $config_file              \
+    $output_file              \
+    $meds_local
+
+rm -v "$meds_local"
+
+
+"""
+
 
 _mof_script_template = r"""#!/bin/bash
 # set up environment before running this script

@@ -26,7 +26,7 @@ def add_true_shear(data, run, index):
     return newdata
 
 
-def match_truth(data, run, index, radius):
+def match_truth(data, run, index, radius=8):
     """
     get the sextractor catalog, which should align with this one.
 

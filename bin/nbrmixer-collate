@@ -51,12 +51,10 @@ def main():
 
             if args.match:
                 # match to truth
-                radius = conf['collate']['match_radius_pixels']
                 data, nmatch = nbrmixer.util.match_truth(
                     data, 
                     conf['nbrsim_run'],
                     i,
-                    radius,
                 )
             else:
                 # the truth file was already matched
