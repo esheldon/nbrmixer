@@ -47,28 +47,31 @@ def main():
                 print("missing file:",output_file)
                 continue
 
-            data = fitsio.read(output_file)
+            try:
+                data = fitsio.read(output_file)
 
-            if args.match:
-                # match to truth
-                data, nmatch = nbrmixer.util.match_truth(
-                    data, 
-                    conf['nbrsim_run'],
-                    i,
-                )
-            else:
-                # the truth file was already matched
-                data = nbrmixer.util.add_true_shear(
-                    data,
-                    conf['nbrsim_run'],
-                    i,
-                )
+                if args.match:
+                    # match to truth
+                    data, nmatch = nbrmixer.util.match_truth(
+                        data, 
+                        conf['nbrsim_run'],
+                        i,
+                    )
+                else:
+                    # the truth file was already matched
+                    data = nbrmixer.util.add_true_shear(
+                        data,
+                        conf['nbrsim_run'],
+                        i,
+                    )
 
-            if first:
-                first=False
-                fits.write(data)
-            else:
-                fits[-1].append(data)
+                if first:
+                    first=False
+                    fits.write(data)
+                else:
+                    fits[-1].append(data)
+            except IOError as err:
+                print("could not read file %s : %s" % (output_file, err))
 
     print("output is in:",collated_file)
 main()

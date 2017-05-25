@@ -1,6 +1,7 @@
 runs: [
     "run-002-mofsub-max001",
     "run-003a-mofsub-max001",
+    "run-003b-mofsub-max001",
 
     #"run-003b-mofsub-max001",
     #"run-003c-mofsub-max001",

@@ -255,9 +255,88 @@ class ScriptWriter(dict):
 
         self.nbrsim_conf = nbrsim.files.read_config(self.conf['nbrsim_run'])
 
-#
-# MEDS making
-#
+class SummerScriptWriter(ScriptWriter):
+    def __init__(self, run, system, select_conf,
+                 missing=False, extra_commands=''):
+
+        super(SummerScriptWriter,self).__init__(
+            run,
+            system,
+            missing=missing,
+            extra_commands=extra_commands,
+        )
+
+        self.select_conf=select_conf
+        if select_conf is not None:
+            self['select_string'] = '--select="%s"' % select_conf
+        else:
+            self['select_string'] = ''
+
+    def _write_script(self, index):
+        self['index'] = index
+
+        text=_summer_script_template % self
+
+        script_fname=files.get_summer_script_file(
+            self['run'],
+            self.select_conf,
+            index,
+        )
+        with open(script_fname, 'w') as fobj:
+            fobj.write(text)
+
+    def _write_lsf(self, index):
+        """
+        write the lsf submission script
+        """
+
+        lsf_dir = files.get_lsf_dir(self['run'])
+        if not os.path.exists(lsf_dir):
+            os.makedirs(lsf_dir)
+
+        lsf_fname=files.get_summer_lsf_file(
+            self['run'],
+            self.select_conf,
+            index,
+        )
+
+        if self.missing:
+            lsf_fname = lsf_fname.replace('.lsf','-missing.lsf')
+
+            sums_file = files.get_sums_file(
+                self['run'],
+                extra=self.select_conf,
+                index=index,
+            )
+
+            if os.path.exists(sums_file):
+                if os.path.exists(lsf_fname):
+                    os.remove(lsf_fname)
+                return
+
+        job_name = os.path.basename(lsf_fname)
+        job_name = job_name.replace('.lsf','')
+
+        self['job_name'] = job_name
+        self['logfile']  = files.get_summer_log_file(
+            self['run'],
+            self.select_conf,
+            index,
+        )
+        self['script']   = files.get_summer_script_file(
+            self['run'],
+            self.select_conf,
+            index,
+        )
+
+        text = _lsf_template  % self
+
+        print("writing:",lsf_fname)
+        with open(lsf_fname,'w') as fobj:
+            fobj.write(text)
+
+
+
 
 _script_template = r"""#!/bin/bash
 # set up environment before running this script
@@ -276,6 +355,18 @@ python -u $(which ngmixit)    \
     $output_file              \
     $meds_file
 """
+
+_summer_script_template = r"""#!/bin/bash
+# set up environment before running this script
+
+nbrmixer-fit-m-c \
+        %(run)s \
+        %(select_string)s \
+        --index=%(index)d \
+        --force
+"""
+
+
 
 _mofsub_script_template = r"""#!/bin/bash
 # set up environment before running this script
