@@ -27,6 +27,7 @@ def main():
     print("will write to:",sums_file)
 
     first=True
+    nmissing=0
     for index in xrange(njobs):
         isums_file = files.get_sums_file(
             args.run,
@@ -36,6 +37,7 @@ def main():
 
         if not os.path.exists(isums_file):
             print("missing:",isums_file)
+            nmissing += 1
         else:
 
             print("reading:",isums_file)
@@ -48,6 +50,7 @@ def main():
                 for n in sums.dtype.names:
                     sums[n] += t[n]
 
+    print("%d/%d were missing" % (nmissing,njobs))
     print("writing:",sums_file)
     fitsio.write(sums_file, sums, clobber=True)
 
