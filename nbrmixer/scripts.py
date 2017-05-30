@@ -256,7 +256,7 @@ class ScriptWriter(dict):
         self.nbrsim_conf = nbrsim.files.read_config(self.conf['nbrsim_run'])
 
 class SummerScriptWriter(ScriptWriter):
-    def __init__(self, run, system, select_conf,
+    def __init__(self, run, system, select_conf, nchunks,
                  missing=False, extra_commands=''):
 
         super(SummerScriptWriter,self).__init__(
@@ -266,14 +266,37 @@ class SummerScriptWriter(ScriptWriter):
             extra_commands=extra_commands,
         )
 
+        self['nchunks'] = nchunks
         self.select_conf=select_conf
         if select_conf is not None:
             self['select_string'] = '--select="%s"' % select_conf
         else:
             self['select_string'] = ''
 
-    def _write_script(self, index):
-        self['index'] = index
+    def write_scripts(self):
+        """
+        write the basic bash scripts and queue submission scripts
+        """
+
+        chunker = Chunker(self['njobs'], self['nchunks'])
+        for i,chunkdef in enumerate(Chunker(self['njobs'], self['nchunks'])):
+            if self['system'] == 'wq':
+                self._write_wq(i)
+
+            elif self['system'] == 'lsf':
+                self._write_lsf(i,chunkdef)
+
+            else:
+                raise RuntimeError("bad system: '%s'" % self['system'])
+
+            self._write_script(i, chunkdef)
+
+    def _write_script(self, index, chunkdef):
+
+        start,end=chunkdef
+
+        self['start'] = start
+        self['end'] = end
 
         text=_summer_script_template % self
 
@@ -285,10 +308,12 @@ class SummerScriptWriter(ScriptWriter):
         with open(script_fname, 'w') as fobj:
             fobj.write(text)
 
-    def _write_lsf(self, index):
+    def _write_lsf(self, index, chunkdef):
         """
         write the lsf submission script
         """
+
+        start,end=chunkdef
 
         lsf_dir = files.get_lsf_dir(self['run'])
         if not os.path.exists(lsf_dir):
@@ -301,18 +326,28 @@ class SummerScriptWriter(ScriptWriter):
         )
 
         if self.missing:
+            self['force']=''
+            all_ok=True
             lsf_fname = lsf_fname.replace('.lsf','-missing.lsf')
 
-            sums_file = files.get_sums_file(
-                self['run'],
-                extra=self.select_conf,
-                index=index,
-            )
+            for i in xrange(start,end+1):
+                sums_file = files.get_sums_file(
+                    self['run'],
+                    extra=self.select_conf,
+                    index=i,
+                )
 
-            if os.path.exists(sums_file):
-                if os.path.exists(lsf_fname):
-                    os.remove(lsf_fname)
-                return
+                if not os.path.exists(sums_file):
+                    all_ok=False
+        else:
+            self['force']='--force'
+            all_ok=False
+
+        if all_ok:
+            return
+
+        if os.path.exists(lsf_fname):
+            os.remove(lsf_fname)
 
         job_name = os.path.basename(lsf_fname)
         job_name = job_name.replace('.lsf','')
@@ -334,6 +369,55 @@ class SummerScriptWriter(ScriptWriter):
         print("writing:",lsf_fname)
         with open(lsf_fname,'w') as fobj:
             fobj.write(text)
+
+    def _makedirs(self):
+        """
+        make all the directories needed
+        """
+        pass
+
+
+def Chunker(num, nchunks):
+
+    nper = num//nchunks
+   
+    current = 0
+    while current < nchunks:
+
+        start = current*nper
+        if current == nchunks-1:
+            end = num-1
+        else:
+            end = (current+1)*nper-1
+
+        yield (start,end)
+
+        current += 1
+
+class ChunkerOld(object):
+    def __init__(self, num, nchunks):
+
+        self.nchunks = nchunks
+        self.nper = num//nchunks
+
+    def __iter__(self):
+        return self
+
+    def next(self): # Python 3: def __next__(self)
+        if self.current > self.high:
+            raise StopIteration
+        else:
+            self.current += 1
+            return self.current - 1
+
+    def __call__(self, index):
+        start = index*self.nper
+        if index == self.nchunks-1:
+            end = self.num-1
+        else:
+            end = (index+1)*self.nper
+
+        return (start,end)
 
 
 
@@ -359,11 +443,15 @@ python -u $(which ngmixit)    \
 _summer_script_template = r"""#!/bin/bash
 # set up environment before running this script
 
-nbrmixer-fit-m-c \
-        %(run)s \
-        %(select_string)s \
-        --index=%(index)d \
-        --force
+start=%(start)d
+end=%(end)d
+
+for index in $(seq $start $end); do
+    nbrmixer-fit-m-c          \
+            %(run)s           \
+            %(select_string)s \
+            --index=$index %(force)s
+done
 """
 
 

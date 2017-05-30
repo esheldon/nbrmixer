@@ -15,11 +15,13 @@ def add_true_shear(data, run, index):
     assert numpy.all(data['number'] == matched_data['number'])
 
     add_dt=[
+        ('sxflags','i4'),
         ('shear_true','f8',2),
         ('shear_index','i2'),
     ]
     newdata = eu.numpy_util.add_fields(data, add_dt)
 
+    newdata['sxflags']     = matched_data['flags']
     newdata['shear_index'] = matched_data['shear_index']
     newdata['shear_true']  = matched_data['shear_true']
 
@@ -63,11 +65,14 @@ def match_truth(data, run, index, radius=8):
     print("        matched %d/%d %.2f" % (nmatch, ntot, frac))
 
     add_dt=[
+        ('sxflags','i4'),
         ('shear_true','f8',2),
         ('shear_index','i2'),
     ]
     newdata = eu.numpy_util.add_fields(data, add_dt)
     newdata['shear_index'] = -9999
+
+    newdata['sxflags'] = sx['flags']
 
     if nmatch > 0:
         newdata['shear_true'][msx,0] = truth['shear1'][mtruth]
