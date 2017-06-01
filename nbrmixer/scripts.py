@@ -324,11 +324,25 @@ class SummerScriptWriter(ScriptWriter):
             self.select_conf,
             index,
         )
+        submitted_fname = lsf_fname.replace('.lsf','.lsf.submitted')
+
+        if os.path.exists(lsf_fname):
+            os.remove(lsf_fname)
+        if os.path.exists(submitted_fname):
+            os.remove(submitted_fname)
+
 
         if self.missing:
             self['force']=''
             all_ok=True
             lsf_fname = lsf_fname.replace('.lsf','-missing.lsf')
+            submitted_fname = lsf_fname.replace('.lsf','.lsf.submitted')
+
+
+            if os.path.exists(submitted_fname):
+                os.remove(submitted_fname)
+            if os.path.exists(lsf_fname):
+                os.remove(lsf_fname)
 
             for i in xrange(start,end+1):
                 sums_file = files.get_sums_file(
@@ -343,11 +357,12 @@ class SummerScriptWriter(ScriptWriter):
             self['force']='--force'
             all_ok=False
 
+
+
         if all_ok:
             return
 
-        if os.path.exists(lsf_fname):
-            os.remove(lsf_fname)
+
 
         job_name = os.path.basename(lsf_fname)
         job_name = job_name.replace('.lsf','')

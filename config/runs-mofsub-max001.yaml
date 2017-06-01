@@ -1,11 +1,5 @@
 runs: [
-    #"run-002-mofsub-max001",
     "run-003a-mofsub-max001",
     "run-003b-mofsub-max001",
-
-    #"run-003b-mofsub-max001",
-    #"run-003c-mofsub-max001",
-    #"run-003d-mofsub-max001",
-    #"run-003e-mofsub-max001",
     "run-003f-mofsub-max001",
 ]
