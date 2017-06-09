@@ -1,0 +1,1 @@
+select: 'between(s2n,10,100) & (data["flags"] == 0) & (data["sxflags"] <= 3)' 
