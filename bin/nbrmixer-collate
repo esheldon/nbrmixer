@@ -10,6 +10,7 @@ import nbrmixer
 from nbrmixer import files
 import nbrsim
 import fitsio
+import esutil as eu
 
 from argparse import ArgumentParser
 
@@ -20,6 +21,12 @@ parser.add_argument('--match',
                     action='store_true',
                     help='match to truth and pull out shear info')
 
+def add_file_index(data, i):
+    add_dt=[('file_id','i4')]
+
+    ndata = eu.numpy_util.add_fields(data, add_dt)
+    ndata['file_id'] = i
+    return ndata
 
 def main():
     args=parser.parse_args()
@@ -48,22 +55,27 @@ def main():
                 continue
 
             try:
-                data = fitsio.read(output_file)
+                odata = fitsio.read(output_file)
 
                 if args.match:
                     # match to truth
-                    data, nmatch = nbrmixer.util.match_truth(
-                        data, 
+                    mdata, nmatch = nbrmixer.util.match_truth(
+                        odata, 
                         conf['nbrsim_run'],
                         i,
                     )
+                    if mdata is None:
+                        continue
+
                 else:
                     # the truth file was already matched
-                    data = nbrmixer.util.add_true_shear(
-                        data,
+                    mdata = nbrmixer.util.add_true_shear(
+                        odata,
                         conf['nbrsim_run'],
                         i,
                     )
+
+                data = add_file_index(mdata, i)
 
                 if first:
                     first=False
@@ -72,6 +84,8 @@ def main():
                     fits[-1].append(data)
             except IOError as err:
                 print("could not read file %s : %s" % (output_file, err))
+            except ValueError as err:
+                print("could process file %s : %s" % (output_file, err))
 
     print("output is in:",collated_file)
 main()
