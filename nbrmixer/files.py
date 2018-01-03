@@ -116,6 +116,66 @@ def get_collated_file(run):
     basename = get_generic_basename(run, ext='fits')
     return os.path.join(dir, basename)
 
+def get_fof_file(run, index):
+    """
+    get the fof output file path
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='fof', ext='fits')
+    return os.path.join(dir, basename)
+
+def get_nbrs_file(run, index):
+    """
+    get the nbrs output file path
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='fits')
+    return os.path.join(dir, basename)
+
+def get_nbrs_script_file(run, index):
+    """
+    get the script file path
+    """
+
+    dir=get_script_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='sh')
+    return os.path.join(dir, basename)
+
+
+def get_nbrs_log_file(run, index):
+    """
+    location of the log file
+    """
+
+    dir=get_output_dir(run, index)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='log')
+
+    return os.path.join(dir, basename)
+
+def get_summer_script_file(run, select, index):
+    """
+    get the script file path
+    """
+
+    dir=get_script_dir(run, index)
+    type = 'sum-%s' % select
+    basename = get_generic_basename(run, index=index, type=type, ext='sh')
+    return os.path.join(dir, basename)
+
+def get_summer_log_file(run, select, index):
+    """
+    location of the log file
+    """
+
+    dir=get_output_dir(run, index)
+    type = 'sum-%s' % select
+    basename = get_generic_basename(run, index=index, type=type, ext='log')
+
+    return os.path.join(dir, basename)
+
+
 #
 # submission scripts
 
@@ -126,12 +186,35 @@ def get_wq_dir(run):
     bdir = os.environ['TMPDIR']
     return os.path.join(bdir, 'nbrmixer', run, 'scripts')
 
-def get_wq_file(run, index):
+def get_lsf_dir(run):
+    """
+    We don't want wq stuff on gpfs
+    """
+    return get_wq_dir(run)
+
+def get_lsf_file(run, index):
     """
     get the yaml file path
     """
-    dir=get_wq_dir(run)
-    basename = get_generic_basename(run, index=index, ext='yaml')
+    dir=get_lsf_dir(run)
+    basename = get_generic_basename(run, index=index, ext='lsf')
+    return os.path.join(dir, basename)
+
+def get_nbrs_lsf_file(run, index):
+    """
+    get the yaml file path
+    """
+    dir=get_lsf_dir(run)
+    basename = get_generic_basename(run, index=index, type='nbrs', ext='lsf')
+    return os.path.join(dir, basename)
+
+def get_summer_lsf_file(run, select, index):
+    """
+    get the yaml file path
+    """
+    dir=get_lsf_dir(run)
+    type = 'sum-%s' % select
+    basename = get_generic_basename(run, index=index, type=type, ext='lsf')
     return os.path.join(dir, basename)
 
 
@@ -196,12 +279,15 @@ def get_means_file(run, extra=None):
     basename = get_generic_basename(run, type=type, ext='fits')
     return os.path.join(dir, basename)
 
-def get_sums_file(run, extra=None):
+def get_sums_file(run, index=None, extra=None):
     dir=get_means_dir(run)
 
     type = ['sums']
     if extra is not None:
         type += [extra]
+
+    if index is not None:
+        type += ['%06d' % index]
 
     type='-'.join(type)
     basename = get_generic_basename(run, type=type, ext='fits')

@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import os
+import nbrmixer
+from nbrmixer import files
+import nbrsim
+import fitsio
+
+from argparse import ArgumentParser
+
+parser=ArgumentParser()
+
+parser.add_argument('run', help='processing run')
+parser.add_argument('select', help='select conf')
+
+def main():
+    args=parser.parse_args()
+
+    conf = files.read_config(args.run)
+    nbrsim_conf = nbrsim.files.read_config(conf['nbrsim_run'])
+    njobs=nbrsim_conf['output']['nfiles']
+
+    sums_file = files.get_sums_file(
+        args.run,
+        extra=args.select,
+    )
+    print("will write to:",sums_file)
+
+    first=True
+    nmissing=0
+    for index in xrange(njobs):
+        isums_file = files.get_sums_file(
+            args.run,
+            extra=args.select,
+            index=index,
+        )
+
+        if not os.path.exists(isums_file):
+            print("missing:",isums_file)
+            nmissing += 1
+        else:
+
+            print("reading:",isums_file)
+            t=fitsio.read(isums_file)
+
+            if first:
+                sums=t
+                first=False
+            else:
+                for n in sums.dtype.names:
+                    sums[n] += t[n]
+
+    print("%d/%d were missing" % (nmissing,njobs))
+    print("writing:",sums_file)
+    fitsio.write(sums_file, sums, clobber=True)
+
+main()

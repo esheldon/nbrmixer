@@ -6,10 +6,12 @@ except:
 
 import os
 import shutil
+import numpy
 import nsim
 import nbrsim
 
 from . import files
+from . import util
 
 
 class NbrmixerSummer(nsim.averaging_new.Summer):
@@ -28,22 +30,33 @@ class NbrmixerSummer(nsim.averaging_new.Summer):
         conf['simc'] = nbrsim.files.read_config(conf['nbrsim_run'])
 
         conf['simc']['do_ring'] = False
-        
-        shear_conf = conf['simc']['bright_gal']['shear']
-        g1 = shear_conf['g1']
-        g2 = shear_conf['g2']
-        conf['simc']['shear'] = [g1,g2]
 
         self.update(conf)
+        self._set_step()
 
-        self.step = self['metacal_pars'].get('step',0.01)
+    def _preselect(self, data):
+        """
+        sub-classes might make a pre-selection, e.g. of some flags
+        """
+        
+        data = super(NbrmixerSummer,self)._preselect(data)
+        w,=numpy.where(data['shear_index'] >= -1) 
+        data=data[w]
+        data['shear_index'] = 0
+        return data
+
+
 
     def get_run_output(self, run):
         """
         collated file
         """
 
-        fname = files.get_collated_file(run)
+        if self.args.index is None:
+            fname = files.get_collated_file(run)
+        else:
+            fname = files.get_output_file(run, self.args.index)
+
         if self.args.cache:
             origname=fname
             bname = os.path.basename(origname)
@@ -55,15 +68,27 @@ class NbrmixerSummer(nsim.averaging_new.Summer):
 
         return fname
 
+    def _add_true_shear(self, data):
+        data = util.add_true_shear(
+            data,
+            self['nbrsim_run'],
+            self.args.index,
+        )
+
+        return data
+
     def _get_means_file(self):
 
         extra=self._get_fname_extra()
         fname=files.get_means_file(self.args.runs, extra=extra)
         return fname
 
-    def _get_sums_file(self, run):
+    def _get_sums_file(self, run, use_select_string=False):
 
-        extra=self._get_fname_extra(run=run)
+        extra=self._get_fname_extra(
+            run=run,
+            use_select_string=use_select_string,
+        )
         fname=files.get_sums_file(run, extra=extra)
         return fname
 
@@ -78,5 +103,18 @@ class NbrmixerSummer(nsim.averaging_new.Summer):
         fname=files.get_plot_file(self.args.runs[0], extra=extra)
         return fname
 
+
+    def _set_select(self):
+        self.select=None
+        self.do_selection=False
+
+        if self.args.select is not None:
+            self.do_selection=True
+
+            d = files.read_config(self.args.select)
+            self.select = d['select'].strip()
+
+        elif self.args.weighted:
+            self.do_selection=True
 
 

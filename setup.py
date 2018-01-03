@@ -6,8 +6,10 @@ import numpy
 
 scripts=[
     'nbrmixer-make-scripts',
+    'nbrmixer-make-sum-scripts',
     'nbrmixer-collate',
     'nbrmixer-fit-m-c',
+    'nbrmixer-sum-all',
 ]
 
 scripts=[os.path.join('bin',s) for s in scripts]
