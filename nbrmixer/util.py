@@ -47,7 +47,10 @@ def match_truth(data, run, index, radius=8):
     print("    reading:",truth_file)
     truth = fitsio.read(truth_file)
 
-    assert numpy.all(sx['number']==data['number'])
+    if not numpy.all(sx['number']==data['number']):
+        print("ERROR: not all numbers match")
+        return None, None
+    #assert numpy.all(sx['number']==data['number'])
 
     allow=1
     msx, mtruth = close_match(
